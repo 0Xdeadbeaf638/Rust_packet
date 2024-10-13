@@ -1,6 +1,7 @@
 # Rust_packet
+To run the application, use the following commands:
 
-To run 
--> git clone https://github.com/yasir378/Rust_packet.git
--> cd Rust_packet
--> sudo cargo r <interface name>
+```bash
+git clone https://github.com/yasir378/Rust_packet.git  
+cd Rust_packet  
+sudo cargo run <interface name>
