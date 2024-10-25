@@ -1,3 +1,5 @@
+// Computing the sum of large vector parallely and asynchronously
+
 #![allow(unused_mut)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
@@ -54,7 +56,7 @@ async fn main() {
 
 
 
-
+// Implementing LinkList some methods like push_front() , push_last() etc 
 // #![allow(unused_mut)]
 // #![allow(unused_variables)]
 // #![allow(dead_code)]
@@ -207,39 +209,6 @@ async fn main() {
 //         None
 // }
 
-// async fn foo(n:u64){
-//       println!("start {n} ");
-//       tokio::time::sleep(Duration::from_secs(2)).await;
-//       println!("end {n} ");
-// }
-// fn calc_sum(start:usize ,end:usize){
-//           let mut sum = 0;
-//           for i in start..=end{
-//                 sum+=i;
-//           }
-//           println!("{}",sum);
-// }
-// const NUM_THREADS: usize= 2;
-
-//  fn main(){
-//     let mut val :Vec<i128> = (1..=16).collect();
-//     let mut chunk_size = val.len()/NUM_THREADS;
-//      for i in 0..NUM_THREADS{
-//           let start = i*chunk_size;
-//           let end = if i == NUM_THREADS - 1 {
-//                     val.len()
-//           }else{
-//                  chunk_size + start
-//           };
-//           let handle = thread::spawn(move||{
-//                 calc_sum(start+1 , end)
-//           });
-//           handle.join().unwrap();
-//      }
-   
-//     //  for handle in handles{
-//     //       handle.await
-//     //  }
 //     //  let join_futures = future::join_all(handles);
 //     //  join_futures.await;
 //     // // let mut l1:LinkList<i32> = LinkList::new();
