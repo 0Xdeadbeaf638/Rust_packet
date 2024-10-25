@@ -1,1 +1,469 @@
-1 . https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=8dcb8978222768dfdb24b9be77dcbe21
+#![allow(unused_mut)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
+use std::sync::{Arc, Mutex};
+use std::thread;
+use futures::future;
+async fn calc_sum(start: usize, end: usize, sum: Arc<Mutex<Box<usize>>>) {
+    let mut local_sum = 0;
+    for i in start..=end {
+        local_sum += i;
+    }
+    let mut sum_lock = sum.lock().unwrap(); // Lock the mutex to get mutable access
+    **sum_lock += local_sum; // Dereference to access the boxed value
+}
+
+const NUM_THREADS: usize = 10;
+#[tokio::main]
+async fn main() {
+    let val: Vec<i128> = (1..=1_000_000_0).collect();
+    let chunk_size = val.len() / NUM_THREADS;
+    let sum = Arc::new(Mutex::new(Box::new(0))); // Initialize Mutex with a boxed usize
+    let mut handles = vec![];
+
+    for i in 0..NUM_THREADS {
+        let start = i * chunk_size;
+        let end = if i == NUM_THREADS - 1 {
+            val.len() - 1 // Use len() - 1 to stay within the bounds
+        } else {
+            start + chunk_size - 1
+        };
+
+        let sum_clone = Arc::clone(&sum);
+        let handle = tokio::spawn(async move {
+            calc_sum(start + 1, end + 1, sum_clone).await; // Offsetting to maintain the range
+        });
+        handles.push(handle);
+    }
+   let mut join_future = future::join_all(handles);
+   join_future.await;
+    let final_sum = *sum.lock().unwrap().clone(); // Lock to access the final sum
+    println!("Total Sum: {}", final_sum);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// #![allow(unused_mut)]
+// #![allow(unused_variables)]
+// #![allow(dead_code)]
+// use std::thread;
+// use std::time::Duration;
+// use futures::future; // 0.3.31res
+// #[derive(Debug ,Clone)]
+// struct LinkList<T>{head:Option<Box<Node<T>>>,}
+
+// #[derive(Debug ,Clone)]
+// struct Node<T>{
+//       data:T,
+//       next:Option<Box<Node<T>>>
+// }
+
+// impl <T:std::fmt::Display +Clone + std::cmp::PartialEq<i32> +std::cmp::PartialOrd> LinkList<T>{
+//     fn new()->Self{
+//           LinkList{
+//               head:None
+//           }
+//     }
+//     fn push_front(&mut self ,data:T){
+//           let mut new_node = Box::new(Node{
+//                   data,
+//                   next:self.head.take()
+//           });
+//           self.head = Some(new_node);
+//     }
+//     fn push_last(&mut self , data:T){
+//           if self.head.is_none(){
+//               let mut new_node = Box::new(Node{
+//                       data,
+//                       next:self.head.take()
+//               });
+//               self.head = Some(new_node);
+//               return;
+//           }
+//           let mut current = &mut self.head;
+//           while let Some(node) = current{
+//                  if node.next.is_none(){
+//                       let mut new_node = Box::new(Node{
+//                             data,
+//                             next:None
+//                       });
+//                       node.next = Some(new_node);
+//                       return;
+//                  }else{
+//                       current = &mut node.next;
+//                  }
+//           }
+//     }
+    
+//     fn pop_first(&mut self)->Option<T>{
+//               if self.head.is_none(){return None;}
+//               if self.head.as_ref().unwrap().next.is_none(){
+//                       return self.head.take().map(|node| node.data);
+//               }
+//               let mut current = self.head.take();
+//               self.head = current.clone()?.next;
+//               current.map(|node| node.data)
+              
+//     }
+//     fn pop_last(&mut self)->Option<T>{
+//              if self.head.is_none(){return None;}
+//               if self.head.as_ref().unwrap().next.is_none(){
+//                       return self.head.take().map(|node| node.data);
+//               } 
+//               let mut current = &mut self.head;
+//               while let Some(node) = current{
+//                       if node.next.as_ref()?.next.is_none(){
+//                             return self.head.take().map(|node| node.data);
+//                       }else{
+//                           current = &mut node.next;
+//                       }
+//               }
+//               None
+//     }
+//     fn insert_at_pos(&mut self , data:T , pos:usize){
+//                 let mut index = 0;
+//                 let freq = self.count_freq().unwrap();
+//                 if pos == 0 {
+//                       self.push_front(data);
+//                       return ;
+//                 }else if pos >= freq {
+//                           self.push_last(data);
+//                           return ;
+//                 }else{
+//                       let mut current = &mut self.head;
+//                       while let  Some(ref mut node)= current{
+//                               if index == pos-1{
+//                                      let mut new_node = Box::new(Node{
+//                                           data,
+//                                           next:node.next.take()
+//                                      });
+//                                      node.next = Some(new_node);
+//                                      return;
+//                               }
+//                               current = &mut node.next;
+//                               index+=1;
+//                       }
+//                 }
+            
+//     }
+//     fn count_freq(&self)->Option<usize>{
+//              let mut current = &self.head;
+//              let mut count =0;
+//              while let Some(node) =current{
+//                      count = count + 1;
+//                      current= &node.next;
+//              }
+//              Some(count)
+//     }
+    
+//     fn merge_sorted_list( l1:Option<Box<LinkList<T>>> , l2:Option<Box<LinkList<T>>>)->Option<Box<LinkList<T>>>{
+//               let mut dummy = Box::new(Node {data : unsafe {std::mem::zeroed()} , next:None});
+//               let mut tail = &mut dummy;
+//               let mut current1 = l1.and_then(|list| list.head);
+//               let mut current2 = l2.and_then(|list| list.head);
+//               while current1.is_some() && current2.is_some(){
+//                     if current1.as_ref().unwrap().data <= current2.as_ref().unwrap().data{
+//                           tail.next = current1;
+//                           tail = tail.next.as_mut().unwrap();
+//                           current1 = tail.next.take();
+//                     }else{
+//                           tail.next =current2;
+//                           tail = tail.next.as_mut().unwrap();
+//                           current2 = tail.next.take();
+//                     }
+//               }
+//               if current1.is_some(){
+//                   tail.next= current1;
+                   
+//               }else{
+//                     tail.next = current2;
+//               }
+//               Some(Box::new(LinkList { head: dummy.next }))
+//     }
+//     fn iter_link(&self){
+//           let mut current = &self.head;
+//           while let Some(node) = current{
+//                 println!("{}",node.data);
+//                 current = &node.next;
+//           }
+//     }
+    
+// }
+// fn double_int(data:Option<i32>)->Option<i32>{
+//         if let Some(_) = data{
+//                 let res = data.and_then(|x| Some(x*2));return res;}
+//         None
+// }
+
+// async fn foo(n:u64){
+//       println!("start {n} ");
+//       tokio::time::sleep(Duration::from_secs(2)).await;
+//       println!("end {n} ");
+// }
+// fn calc_sum(start:usize ,end:usize){
+//           let mut sum = 0;
+//           for i in start..=end{
+//                 sum+=i;
+//           }
+//           println!("{}",sum);
+// }
+// const NUM_THREADS: usize= 2;
+
+//  fn main(){
+//     let mut val :Vec<i128> = (1..=16).collect();
+//     let mut chunk_size = val.len()/NUM_THREADS;
+//      for i in 0..NUM_THREADS{
+//           let start = i*chunk_size;
+//           let end = if i == NUM_THREADS - 1 {
+//                     val.len()
+//           }else{
+//                  chunk_size + start
+//           };
+//           let handle = thread::spawn(move||{
+//                 calc_sum(start+1 , end)
+//           });
+//           handle.join().unwrap();
+//      }
+   
+//     //  for handle in handles{
+//     //       handle.await
+//     //  }
+//     //  let join_futures = future::join_all(handles);
+//     //  join_futures.await;
+//     // // let mut l1:LinkList<i32> = LinkList::new();
+//     // l1.push_front(304);
+//     // l1.push_front(4);
+//     // l1.push_front(3);
+//     // l1.iter_link();
+    
+//     // println!("----------------------------------");
+//     // let mut l2 :LinkList<i32> = LinkList::new();
+//     // l2.push_front(123);
+//     // l2.push_front(2);
+//     // l2.push_front(1);
+//     // l2.iter_link();
+//     // println!("----------------------------------");
+//     // let merger = LinkList::merge_sorted_list(Some(Box::new(l1)) , Some(Box::new(l2)));
+//     // if let Some(megr) = merger{
+//     //      megr.iter_link();
+//     // }
+
+// }
+
+
+
+
+
+
+
+
+
+
+// /*
+//  fn merge_two_lists(l1: Option<Box<ListNode>>, l2: Option<Box<ListNode>>) -> Option<Box<ListNode>> {
+//           let mut dummy = Box::new(ListNode::new(0)); create a dummty node 
+//           let mut tail = &mut dummy;
+//           let mut curr1 = l1;
+//           let mut curr2 = l2;
+//           while curr1.is_some() && curr2.is_some(){
+//                   if curr1.as_ref().unwrap().val <= curr2.as_ref().unwrap().val{
+//                           tail.next = curr1;
+//                           tail = tail.next.as_mut().unwrap();
+//                           curr1 = tail.next.take();
+//                   }else{
+//                         tail.next = curr2;
+//                         tail = tail.next.as_mut().unwrap();
+//                         curr2 = tail.next.take();
+
+//                   }
+//           }
+//           if curr1.is_some(){
+//               tail.next =curr1;
+//           }else{
+//               tail.next =curr2;
+//           }
+//           dummy.next
+//     }
+// */
+
+
+
+
+
+
+
+// // struct LinkList<T>{
+// //       head:Option<Box<Node<T>>>,
+// // }
+// // #[derive(Debug ,Clone)]
+// // struct Node<T>{
+// //      data:T,
+// //      next:Option<Box<Node<T>>>,
+// // }
+
+// // impl <T: std::fmt::Display + Clone + std::cmp::PartialEq<i32>>LinkList<T>{
+// //       fn new()->Self{
+// //           LinkList{head:None}
+// //       }
+// //       fn push_front(&mut self , data:T){
+// //              // Create a new Node 
+// //              let mut new_node = Box::new(Node{
+// //                   data,
+// //                   next:self.head.take(),
+// //              });
+// //              self.head = Some(new_node);
+// //       }
+// //       fn iter_link(&self){
+// //             let mut current = &self.head;
+// //             while let Some(node) = current{
+// //                   println!("{}" , node.data);
+// //                   current = &node.next;
+         
+// //             }
+// //       }
+// //       fn push_last(&mut self , data:T){
+// //                  if self.head.is_none(){
+// //                       let mut new_node = Box::new(Node{
+// //                              data,
+// //                              next:self.head.take(),
+// //                       });
+// //                       self.head = Some(new_node);
+// //                       return ;
+                      
+// //                  }
+// //                  let mut current = &mut self.head ;
+// //                  while let Some(node) = current{
+// //                          if node.next.is_none(){
+// //                               let mut new_node = Box::new(Node{
+// //                                      data,
+// //                                      next:None
+// //                               });
+// //                               node.next =Some(new_node);
+// //                               return;
+// //                          }else{
+// //                               current = &mut node.next ;
+// //                          }
+// //                  }
+// //       }
+      
+// //       fn pop_first(&mut self) -> Option<T> { 
+// //         if self.head.is_none() {return None; }
+// //         if self.head.as_ref()?.next.is_none()
+// //         {return self.head.take().map(|node| node.data);}
+// //         let mut old_head = self.head.take(); 
+// //         self.head = old_head.clone()?.next; 
+// //         old_head.map(|node| node.data)
+// //     }
+// //     fn pop_last(&mut self)->Option<T>{
+// //           if self.head.is_none(){return None;}
+// //           if self.head.as_ref()?.next.is_none(){
+// //                 return self.head.take().map(|node| node.data);
+// //           }
+// //           let mut current = &mut self.head;
+// //           while let Some(ref mut node) =  current{
+// //                  if node.next.as_ref()?.next.is_none(){
+// //                       return node.next.take().map(|node| node.data);
+// //                  }current = &mut node.next;
+// //           }
+// //           None
+// //     }
+// //       fn count_frequency(&self)->usize{ 
+// //           let mut current = &self.head;
+// //           let mut count = 0;
+// //           while let Some(node) = current{ 
+// //                  count+=1;
+// //                  current = &node.next;
+// //           }
+// //           count
+          
+// //       }
+// //       fn insert_post(&mut self, data: T, pos: usize) {
+// //         let mut freq = 0;
+// //         let mut current = &mut self.head;
+    
+// //         // Count the number of elements in the list to determine freq
+// //         let mut freq = self.count_frequency();
+    
+// //         if pos == 0 {
+// //             // Call the push_first function to insert at the front
+// //             self.push_front(data);
+// //             return;
+// //         } else if pos >= freq {
+// //             // Call the push_last function to insert at the end
+// //             self.push_last(data);
+// //             return;
+// //         } else {
+// //             // Insert at a specified position
+// //             let mut index = 0;
+// //             current = &mut self.head;
+    
+// //             while let Some(ref mut node) = current {
+// //                 if index == pos - 1 {
+// //                     // Create the new node and adjust pointers
+// //                     let new_node = Box::new(Node {
+// //                         data,
+// //                         next: node.next.take(),
+// //                     });
+// //                     node.next = Some(new_node);
+// //                     return;
+// //                 }
+// //                 current = &mut node.next;
+// //                 index += 1;
+// //             }
+// //     }
+// // }
+// //         fn search_node(&self, data: T) -> Option<usize> 
+// //                 where 
+// //                     T: PartialEq, 
+// //                 {
+// //                     let mut current = &self.head;
+// //                     let mut index = 0;
+// //                     while let Some(node) = current {
+// //                         if &data == &node.data {
+// //                             return Some(index); 
+// //                         }
+// //                         index+=1;
+// //                         current = &node.next;
+                       
+// //                     }
+// //                     None
+// //                 }
+// // }
+// // fn main(){
+     
+// //      let mut l1 = LinkList::new();
+// //      l1.push_front(34);
+// //      l1.push_front(34);
+// //      l1.push_front(34);
+// //      l1.push_front(34);
+// //      l1.iter_link();
+// //      println!("________________________________");
+     
+// //      let mut l2 = LinkList::new();
+// //      l2.push_last(304);
+// //      l2.push_last(934);
+// //      l2.push_last(434);
+// //      l2.push_last(354);
+// //      l2.push_last(00);
+     
+// //      l2.iter_link();
+// //      println!("________________________________");
+// //       l2.insert_post(23 ,3);
+// //       l2.iter_link();
+// //       let data = 23;
+// //       println!("Element {} found at {}" , data ,l2.search_node(data).unwrap());
+    
+     
+// // }
